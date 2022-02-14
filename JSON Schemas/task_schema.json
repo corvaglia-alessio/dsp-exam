@@ -54,6 +54,11 @@
           "$ref": "./user_schema.json#"
       }
     },
+    "completers": {
+      "type": "integer",
+      "description": "minimum number of assegnee that must complete the task in order to consider it completed",
+      "default": 1
+    },
     "self": {
       "type": "string",
       "format": "uri-reference",

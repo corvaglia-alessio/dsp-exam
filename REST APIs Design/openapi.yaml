@@ -518,6 +518,9 @@ paths:
         '404':
           description: Not Found
           content: {}
+        '409':
+          description: Conflict
+          content: {}
         '500':
           description: Internal Server Error
           content: {}
@@ -712,6 +715,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/User'
+        completers:
+          type: integer
+          description: >-
+            minimum number of assegnee that must complete the task in order to
+            consider it completed
+          default: 1
         self:
           type: string
           format: uri-reference

@@ -17,11 +17,11 @@ var constants = require('../utils/constants.js');
 exports.addTask = function(task, owner) {
     return new Promise((resolve, reject) => {
         const sql = 'INSERT INTO tasks(description, important, private, project, deadline, completed, owner) VALUES(?,?,?,?,?,?, ?)';
-        db.run(sql, [task.description, task.important, task.private, task.project, task.deadline, task.completed, owner], function(err) {
+        db.run(sql, [task.description, task.important, task.private, task.project, task.deadline, task.completed, owner, task.completers], function(err) {
             if (err) {
                 reject(err);
             } else {
-                var createdTask = new Task(this.lastID, task.description, task.important, task.private, task.deadline, task.project, task.completed, task.active);
+                var createdTask = new Task(this.lastID, task.description, task.important, task.private, task.deadline, task.project, task.completed, task.active, task.completers);
                 resolve(createdTask);
             }
         });
@@ -82,7 +82,7 @@ exports.deleteTask = function(taskId, owner) {
 exports.getPublicTasks = function(req) {
     return new Promise((resolve, reject) => {
 
-        var sql = "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline,t.completed,c.total_rows FROM tasks t, (SELECT count(*) total_rows FROM tasks l WHERE l.private=0) c WHERE  t.private = 0 "
+        var sql = "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline,t.completed, c.total_rows, t.completers FROM tasks t, (SELECT count(*) total_rows FROM tasks l WHERE l.private=0) c WHERE  t.private = 0 "
         var limits = getPagination(req);
         if (limits.length != 0) sql = sql + " LIMIT ?,?";
         db.all(sql, limits, (err, rows) => {
@@ -131,7 +131,7 @@ exports.getPublicTasksTotal = function() {
  **/
 exports.getSingleTask = function(taskId,owner) {
     return new Promise((resolve, reject) => {
-        const sql1 = "SELECT id as tid, description, important, private, project, deadline, completed, owner FROM tasks WHERE id = ?";
+        const sql1 = "SELECT id as tid, description, important, private, project, deadline, completed, owner, completers FROM tasks WHERE id = ?";
         db.all(sql1, [taskId], (err, rows) => {
             if (err)
                 reject(err);
@@ -169,7 +169,7 @@ exports.getSingleTask = function(taskId,owner) {
  **/
  exports.getOwnedTasks = function(req) {
     return new Promise((resolve, reject) => {
-        var sql =  "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline,t.completed FROM tasks as t WHERE t.owner = ?";
+        var sql =  "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline, t.completed, t.completers FROM tasks as t WHERE t.owner = ?";
         var limits = getPagination(req);
         if (limits.length != 0) sql = sql + " LIMIT ?,?";
         limits.unshift(req.user);
@@ -198,7 +198,7 @@ exports.getSingleTask = function(taskId,owner) {
  **/
 exports.getAssignedTasks = function(req) {
     return new Promise((resolve, reject) => {
-        var sql =  "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline,t.completed,a.active, u.id as uid, u.name, u.email FROM tasks as t, users as u, assignments as a WHERE t.id = a.task AND a.user = u.id AND u.id = ?";
+        var sql =  "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline, t.completed, t.completers, a.active, u.id as uid, u.name, u.email FROM tasks as t, users as u, assignments as a WHERE t.id = a.task AND a.user = u.id AND u.id = ?";
         var limits = getPagination(req);
         if (limits.length != 0) sql = sql + " LIMIT ?,?";
         limits.unshift(req.user);
@@ -307,6 +307,10 @@ exports.updateSingleTask = function(task, taskId, owner) {
                             sql3 = sql3.concat(', deadline = ?');
                             parameters.push(task.deadline);
                         } 
+                        if(task.completers != undefined){
+                            sql3 = sql3.concat(', deadline = ?');
+                            parameters.push(task.completers);
+                        }
                         sql3 = sql3.concat(' WHERE id = ?');
                         parameters.push(task.id);
 
@@ -351,19 +355,37 @@ exports.updateSingleTask = function(task, taskId, owner) {
                         reject(err);
                     else if (rows2.length === 0)
                         reject(403);
+                    else if(rows2[0].completed === 1)
+                        reject(409); //the completed flag for the given user and task has already been set
                     else {
-                        const sql3 = 'UPDATE tasks SET completed = 1 WHERE id = ?';
-                        db.run(sql3, [taskId], function(err) {
-                            if (err) {
+                        const sql3 = 'UPDATE assignment SET completed = 1 WHERE task = ? AND user = ?';
+                        db.run(sql3, [taskId, assignee], function(err) {
+                            if (err) 
                                 reject(err);
-                            } else {
-                                resolve(null);
+                            else {
+                                const sql4 = "SELECT a.actual, t.completers FROM (SELECT count(*) as actual, task FROM assignments WHERE task = ? AND completed = 1) as a, tasks t WHERE t.id = a.task AND a.actual = t.completers";
+                                db.all(sql4, [taskId], (err, rows3) => {
+                                    if(err)
+                                        reject(err);
+                                    else {
+                                        if(rows3.length === 1){
+                                            const sql5 = 'UPDATE tasks SET completed = 1 WHERE id = ?';
+                                            db.run(sql5, [taskId], function(err) {
+                                                if(err)
+                                                    reject(err);
+                                                else 
+                                                    resolve(null);
+                                            });
+                                        } 
+                                        else
+                                            resolve(null);
+                                    }
+                                });
                             }
                         })
                     }
                 })
             } 
-            
         });
     });
 }
