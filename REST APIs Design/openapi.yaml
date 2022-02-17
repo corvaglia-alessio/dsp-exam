@@ -164,6 +164,9 @@ paths:
         - cookieAuth: []
       summary: Update a task
       description: The task with ID taskId is updated. This operation does not allow to mark a task as completed. This operation can be performed only by the owner.
+        If the completers property is modified one the following happens --> 
+        1) completers number is reduced --> if the actual number of users that completed the task is now >= completers property just modified, the task is considered completed, and its flag is set to 1
+        2) completers number is augmented -> if the actual number of users that completed the task is not sufficient anymore to consider the entire task as completed, the completed flag is set to 0
       operationId: updateSingleTask
       parameters:
         - name: taskId
@@ -460,6 +463,7 @@ paths:
       description: >-
         The user that is removed is the user, identified by userId, that was
         assigned to the task identified by taskId. This operation can be performed only by the owner.
+        If the user already completed the task, the operation is not performed because of a conflict.
       operationId: removeUser
       parameters:
         - name: taskId
@@ -488,6 +492,9 @@ paths:
           content: {}
         '404':
           description: Not Found
+          content: {}
+        '409':
+          description: Conflict
           content: {}
         '500':
           description: Internal Server Error

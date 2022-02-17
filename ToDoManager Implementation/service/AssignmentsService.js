@@ -176,10 +176,12 @@ exports.removeUser = function(taskId,userId,owner) {
                 reject(403);
             }
             else {
-                const sql2 = 'DELETE FROM assignments WHERE task = ? AND user = ?';
+                const sql2 = 'DELETE FROM assignments WHERE task = ? AND user = ? AND completed = 0';
                 db.run(sql2, [taskId, userId], (err) => {
                     if (err)
                         reject(err);
+                    else if(this.changes == 0)
+                        reject(409);
                     else
                         resolve(null);
                 })
@@ -298,8 +300,7 @@ exports.selectTask = function selectTask(userId, taskId) {
  **/
  exports.deselectTask = function deselectTask(userId) {
     return new Promise((resolve, reject) => {
-        //const sql1 = "SELECT task FROM assignment WHERE user = ? AND active = 1"
-        const sql1 = "SELECT a.task, u.name, t.description FROM assignement a, users u, tasks, t WHERE a.user = ? AND a.active = 1 AND a.task = t.id AND a.user = u.id";
+        const sql1 = "SELECT task FROM assignment WHERE user = ? AND active = 1"
         db.all(sql1, [userId], (err, rows) => {
             if (err)
                 reject(err);
@@ -312,9 +313,6 @@ exports.selectTask = function selectTask(userId, taskId) {
                     if (err)
                         reject(err);
                     else
-                        //var updateMessage = new WSMessage('update', parseInt(userId), rows[0].name, parseInt(taskId), rows[0].description);
-                        //WebSocket.sendAllClients(updateMessage);
-                        //WebSocket.saveMessage(userId, new WSMessage('login', parseInt(userId), rows[0].name, parseInt(taskId), rows[0].description));
                         resolve(null);
                 })
             }

@@ -61,6 +61,9 @@ module.exports.removeUser = function removeUser (req, res, next) {
       else if (response == 404){
         utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': 'The task does not exist.' }], }, 404);
       }
+      else if (response == 409){
+        utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': 'The user is not a task assegnee or the user has already completed the task.' }], }, 409);
+      }
       else {
         utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': response }],}, 500);
       }

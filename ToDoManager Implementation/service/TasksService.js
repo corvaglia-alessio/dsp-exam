@@ -267,6 +267,10 @@ exports.getAssignedTasksTotal = function(req) {
  * - task: new task object
  * - taskID: the ID of the task to be updated
  * - owner: the ID of the user who wants to update the task
+ * 
+ * If the completers property is modified the following happens:
+ *      - completers number is reduced --> if the actual number of users that completed the task is now >= completers property, the task is considered completed, and its flag is set to 1
+ *      - completers number is augmented -> if the actual number of users that completed the task is not sufficient anymore to consider the entire task as completed, the flag is not set to 0
  * Output:
  * - no response expected for this operation
  * 
@@ -318,9 +322,35 @@ exports.updateSingleTask = function(task, taskId, owner) {
                             if (err) {
                                 reject(err);
                             } else {
+                                if(task.completers != undefined){
+                                    const sql4 = "SELECT a.actual, t.completers FROM (SELECT count(*) as actual, task FROM assignments WHERE task = ? AND completed = 1) as a, tasks t WHERE t.id = a.task";
+                                    db.all(sql4, [taskId], (err, rows2) => {
+                                    if(err)
+                                        reject(err);
+                                    else {
+                                        if(rows2[0].actual >= rows2.completers){
+                                            const sql5 = 'UPDATE tasks SET completed = 1 WHERE id = ?';
+                                            db.run(sql5, [taskId], function(err) {
+                                                if(err)
+                                                    reject(err);
+                                                else 
+                                                    resolve(null);
+                                            });
+                                        } 
+                                        else{
+                                            const sql6 = 'UPDATE tasks SET completed = 0 WHERE id = ?';
+                                            db.run(sql6, [taskId], function(err) {
+                                                if(err)
+                                                    reject(err);
+                                                else 
+                                                    resolve(null);
+                                            });
+                                        }
+                                    }
+                                });
+                                }
                                 resolve(null);
                             }
-
                         })
                     }
                 })
