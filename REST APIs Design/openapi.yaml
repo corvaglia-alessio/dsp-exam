@@ -43,6 +43,8 @@ tags:
     description: resource representing the user with ID userId
   - name: 'users/{userId}/selection'
     description: resource representing the task selection for the user with ID userID
+  - name: 'users/{userId}/deselection'
+    description: resource representing the task deselection for the user with ID userID
   - name: 'users/{userId}/tasks/created'
     description: resource representing the tasks created by the user with ID userId
   - name: 'users/{userId}/tasks/assigned'
@@ -725,11 +727,11 @@ paths:
         summary: Select a task as the active task
         description: >-
           The task that is included in the request body is labeled as the acrive task for the user with ID userId.
-        operationId: removeUser
+        operationId: selectTask
         parameters:
           - name: userId
             in: path
-            description: ID of the user to remove
+            description: ID of the user tthat wants to select the task
             required: true
             schema:
               type: integer
@@ -738,11 +740,45 @@ paths:
           '204':
             description: Successful operation - No Content
             content: {}
+          '401':
+            description: Unauthorized
+            content: {}
           '403':
             description: Forbidden
             content: {}
           '404':
             description: Not Found
+            content: {}
+          '500':
+            description: Internal Server Error
+            content: {}
+  '/api/users/{userId}/deselection':
+      put:
+        tags:
+          - 'users/{userId}/deselection'
+        security:
+          - cookieAuth: []
+        summary: Deselect the currently active task
+        description: >-
+         The currently active task for the user with id userId is deselected. If the user has no active task, a conflict error is raised.
+        operationId: deselectTask
+        parameters:
+          - name: userId
+            in: path
+            description: ID of the user that wants to remove the selection of his/her own active task
+            required: true
+            schema:
+              type: integer
+              format: int64
+        responses:
+          '204':
+            description: Successful operation - No Content
+            content: {}
+          '401':
+            description: Unauthorized
+            content: {}
+          '409':
+            description: Conflict
             content: {}
           '500':
             description: Internal Server Error

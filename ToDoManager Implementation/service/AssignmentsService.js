@@ -80,6 +80,78 @@ exports.getUsersAssigned = function(taskId,owner) {
     });
 }
 
+/**
+ * Retreve the users currently working on the task
+ *
+ * Input: 
+ * - taskId: ID of the task
+ * - owner: ID of the user who wants to retrieve the list of active users
+ * Output:
+ * - list of active users
+ * 
+ **/
+ exports.getUsersActive = function(taskId,owner) {
+    return new Promise((resolve, reject) => {
+        const sql1 = "SELECT owner FROM tasks t WHERE t.id = ?";
+        db.all(sql1, [taskId], (err, rows) => {
+            if (err)
+                reject(err);
+            else if (rows.length === 0)
+                reject(404);
+            else if(owner != rows[0].owner) {
+                reject(403);
+            }
+            else {
+                const sql2 = "SELECT u.id as uid, u.name, u.email FROM assignments as a, users as u WHERE  a.task = ? AND a.user = u.id AND a.active = 1";
+                db.all(sql2, [taskId], (err, rows) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        let users = rows.map((row) => new User(row.uid, row.name, row.email, null));
+                        resolve(users);
+                    }
+                });
+            }
+        });
+    });
+}
+
+/**
+ * Retreve the users that have completed the task
+ *
+ * Input: 
+ * - taskId: ID of the task
+ * - owner: ID of the user who wants to retrieve the list of completers
+ * Output:
+ * - list of completers
+ * 
+ **/
+ exports.getUsersCompleted = function(taskId,owner) {
+    return new Promise((resolve, reject) => {
+        const sql1 = "SELECT owner FROM tasks t WHERE t.id = ?";
+        db.all(sql1, [taskId], (err, rows) => {
+            if (err)
+                reject(err);
+            else if (rows.length === 0)
+                reject(404);
+            else if(owner != rows[0].owner) {
+                reject(403);
+            }
+            else {
+                const sql2 = "SELECT u.id as uid, u.name, u.email FROM assignments as a, users as u WHERE  a.task = ? AND a.user = u.id AND a.completed = 1";
+                db.all(sql2, [taskId], (err, rows) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        let users = rows.map((row) => new User(row.uid, row.name, row.email, null));
+                        resolve(users);
+                    }
+                });
+            }
+        });
+    });
+}
+
 
 /**
  * Remove a user from the assigned task
@@ -114,7 +186,6 @@ exports.removeUser = function(taskId,userId,owner) {
             }
         });
     });
-
 }
 
 
@@ -216,6 +287,40 @@ exports.selectTask = function selectTask(userId, taskId) {
     });
 }
 
+/**
+ * Deselect the currently active task
+ *
+ * Input: 
+ * - userId: id of the user who wants to deselect the task
+ * Output:
+ * - no response expected for this operation
+ * 
+ **/
+ exports.deselectTask = function deselectTask(userId) {
+    return new Promise((resolve, reject) => {
+        //const sql1 = "SELECT task FROM assignment WHERE user = ? AND active = 1"
+        const sql1 = "SELECT a.task, u.name, t.description FROM assignement a, users u, tasks, t WHERE a.user = ? AND a.active = 1 AND a.task = t.id AND a.user = u.id";
+        db.all(sql1, [userId], (err, rows) => {
+            if (err)
+                reject(err);
+            else if (rows.length === 0)
+                reject(409);
+            else {
+                var taskId = rows[0].task;
+                const sql2 = 'UPDATE assignments SET active = 0 WHERE user = ? AND task = ?';
+                db.run(sql2, [userId, taskId], (err) => {
+                    if (err)
+                        reject(err);
+                    else
+                        //var updateMessage = new WSMessage('update', parseInt(userId), rows[0].name, parseInt(taskId), rows[0].description);
+                        //WebSocket.sendAllClients(updateMessage);
+                        //WebSocket.saveMessage(userId, new WSMessage('login', parseInt(userId), rows[0].name, parseInt(taskId), rows[0].description));
+                        resolve(null);
+                })
+            }
+        });
+    });
+}
 
 /**
  * Utility functions
@@ -232,77 +337,4 @@ exports.assignEach = function(taskId, owner) {
           }
       });
   });
-}
-
-
-/**
- * Retreve the users currently working on the task
- *
- * Input: 
- * - taskId: ID of the task
- * - owner: ID of the user who wants to retrieve the list of active users
- * Output:
- * - list of active users
- * 
- **/
- exports.getUsersActive = function(taskId,owner) {
-    return new Promise((resolve, reject) => {
-        const sql1 = "SELECT owner FROM tasks t WHERE t.id = ?";
-        db.all(sql1, [taskId], (err, rows) => {
-            if (err)
-                reject(err);
-            else if (rows.length === 0)
-                reject(404);
-            else if(owner != rows[0].owner) {
-                reject(403);
-            }
-            else {
-                const sql2 = "SELECT u.id as uid, u.name, u.email FROM assignments as a, users as u WHERE  a.task = ? AND a.user = u.id AND a.active = 1";
-                db.all(sql2, [taskId], (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        let users = rows.map((row) => new User(row.uid, row.name, row.email, null));
-                        resolve(users);
-                    }
-                });
-            }
-        });
-    });
-}
-
-/**
- * Retreve the users that have completed the task
- *
- * Input: 
- * - taskId: ID of the task
- * - owner: ID of the user who wants to retrieve the list of completers
- * Output:
- * - list of completers
- * 
- **/
- exports.getUsersCompleted = function(taskId,owner) {
-    return new Promise((resolve, reject) => {
-        const sql1 = "SELECT owner FROM tasks t WHERE t.id = ?";
-        db.all(sql1, [taskId], (err, rows) => {
-            if (err)
-                reject(err);
-            else if (rows.length === 0)
-                reject(404);
-            else if(owner != rows[0].owner) {
-                reject(403);
-            }
-            else {
-                const sql2 = "SELECT u.id as uid, u.name, u.email FROM assignments as a, users as u WHERE  a.task = ? AND a.user = u.id AND a.completed = 1";
-                db.all(sql2, [taskId], (err, rows) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        let users = rows.map((row) => new User(row.uid, row.name, row.email, null));
-                        resolve(users);
-                    }
-                });
-            }
-        });
-    });
 }

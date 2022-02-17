@@ -90,6 +90,26 @@ module.exports.selectTask = function selectTask(req, res, next) {
       });
 };
 
+
+module.exports.deselectTask = function deselectTask(req, res, next) {
+  var userId = req.params.userId;
+  if(taskId == undefined){
+    utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': 'Missing taskId query parameter'}],}, 400);
+  }
+  Assignments.deselectTask(userId)
+      .then(function(response) {
+            utils.writeJson(res, response, 204);
+      })
+      .catch(function(response) {
+        if(response == 409){
+          utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': 'The user has no active task' }], }, 409);
+        }
+        else {
+          utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': response }],}, 500);
+        }
+      });
+};
+
 module.exports.getUsersActive = function getUsersActive (req, res, next) {
   Assignments.getUsersActive(req.params.taskId, req.user)
     .then(function (response) {
