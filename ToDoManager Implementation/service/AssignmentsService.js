@@ -176,14 +176,21 @@ exports.removeUser = function(taskId,userId,owner) {
                 reject(403);
             }
             else {
-                const sql2 = 'DELETE FROM assignments WHERE task = ? AND user = ? AND completed = 0';
-                db.run(sql2, [taskId, userId], (err) => {
-                    if (err)
-                        reject(err);
-                    else if(this.changes == 0)
+                const sql2 = "SELECT task FROM assignments WHERE task = ? AND user = ? AND completed = 1"
+                db.all(sql2, [taskId, userId], (err, rows) => {
+                    if(err)
+                        reject(err)
+                    else if(rows.length === 1)
                         reject(409);
-                    else
-                        resolve(null);
+                    else{
+                        const sql3 = 'DELETE FROM assignments WHERE task = ? AND user = ?';
+                        db.run(sql3, [taskId, userId], (err) => {
+                        if (err)
+                            reject(err);
+                        else
+                            resolve(null);
+                        })
+                    }
                 })
             }
         });

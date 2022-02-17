@@ -288,70 +288,65 @@ exports.updateSingleTask = function(task, taskId, owner) {
                 reject(403);
             }
             else {
-                const sql2 = 'DELETE FROM assignments WHERE task = ?';
-                db.run(sql2, [taskId], (err) => {
-                    if (err)
-                        reject(err);
-                    else {
-                        var sql3 = 'UPDATE tasks SET description = ?';
-                        var parameters = [task.description];
-                        if(task.important != undefined){
-                            sql3 = sql3.concat(', important = ?');
-                            parameters.push(task.important);
-                        } 
-                        if(task.private != undefined){
-                            sql3 = sql3.concat(', private = ?');
-                            parameters.push(task.private);
-                        } 
-                        if(task.project != undefined){
-                            sql3 = sql3.concat(', project = ?');
-                            parameters.push(task.project);
-                        } 
-                        if(task.deadline != undefined){
-                            sql3 = sql3.concat(', deadline = ?');
-                            parameters.push(task.deadline);
-                        } 
-                        if(task.completers != undefined){
-                            sql3 = sql3.concat(', deadline = ?');
-                            parameters.push(task.completers);
-                        }
-                        sql3 = sql3.concat(' WHERE id = ?');
-                        parameters.push(task.id);
+                var sql3 = 'UPDATE tasks SET description = ?';
+                var parameters = [task.description];
+                if(task.important !== undefined){
+                    sql3 = sql3.concat(', important = ?');
+                    parameters.push(task.important);
+                } 
+                if(task.private !== undefined){
+                    sql3 = sql3.concat(', private = ?');
+                    parameters.push(task.private);
+                } 
+                if(task.project !== undefined){
+                    sql3 = sql3.concat(', project = ?');
+                    parameters.push(task.project);
+                } 
+                if(task.deadline !== undefined){
+                    sql3 = sql3.concat(', deadline = ?');
+                    parameters.push(task.deadline);
+                } 
+                if(task.completers !== undefined){
+                    sql3 = sql3.concat(', completers = ?');
+                    parameters.push(task.completers);
+                }
+                sql3 = sql3.concat(' WHERE id = ?');
+                parameters.push(taskId);
 
-                        db.run(sql3, parameters, function(err) {
-                            if (err) {
+                db.run(sql3, parameters, function(err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if(task.completers != undefined){
+                            const sql4 = "SELECT a.actual, t.completers FROM (SELECT count(*) as actual, task FROM assignments WHERE task = ? AND completed = 1) as a, tasks t WHERE t.id = a.task";
+                            db.all(sql4, [taskId], (err, rows2) => {
+                            if(err)
                                 reject(err);
-                            } else {
-                                if(task.completers != undefined){
-                                    const sql4 = "SELECT a.actual, t.completers FROM (SELECT count(*) as actual, task FROM assignments WHERE task = ? AND completed = 1) as a, tasks t WHERE t.id = a.task";
-                                    db.all(sql4, [taskId], (err, rows2) => {
-                                    if(err)
-                                        reject(err);
-                                    else {
-                                        if(rows2[0].actual >= rows2.completers){
-                                            const sql5 = 'UPDATE tasks SET completed = 1 WHERE id = ?';
-                                            db.run(sql5, [taskId], function(err) {
-                                                if(err)
-                                                    reject(err);
-                                                else 
-                                                    resolve(null);
-                                            });
-                                        } 
-                                        else{
-                                            const sql6 = 'UPDATE tasks SET completed = 0 WHERE id = ?';
-                                            db.run(sql6, [taskId], function(err) {
-                                                if(err)
-                                                    reject(err);
-                                                else 
-                                                    resolve(null);
-                                            });
-                                        }
+                            else {
+                                if(rows2.length !== 0){
+                                    if(rows2[0].actual >= rows2[0].completers){
+                                        const sql5 = 'UPDATE tasks SET completed = 1 WHERE id = ?';
+                                        db.run(sql5, [taskId], function(err) {
+                                            if(err)
+                                                reject(err);
+                                            else 
+                                                resolve(null);
+                                        });
+                                    } 
+                                    else{
+                                        const sql6 = 'UPDATE tasks SET completed = 0 WHERE id = ?';
+                                        db.run(sql6, [taskId], function(err) {
+                                            if(err)
+                                                reject(err);
+                                            else 
+                                                resolve(null);
+                                        });
                                     }
-                                });
                                 }
-                                resolve(null);
                             }
-                        })
+                        });
+                        }
+                        resolve(null);
                     }
                 })
             }
@@ -372,14 +367,14 @@ exports.updateSingleTask = function(task, taskId, owner) {
  **/
  exports.completeTask = function(taskId, assignee) {
     return new Promise((resolve, reject) => {
-        const sql1 = "SELECT * FROM tasks t WHERE t.id = ?";
+        const sql1 = "SELECT * FROM tasks WHERE id = ?";
         db.all(sql1, [taskId], (err, rows) => {
             if (err)
                 reject(err);
             else if (rows.length === 0)
                 reject(404);
             else {
-                const sql2 = "SELECT * FROM assignments a WHERE a.user = ? AND a.task = ?";
+                const sql2 = "SELECT * FROM assignments WHERE user = ? AND task = ?";
                 db.all(sql2, [assignee, taskId], (err, rows2) => {
                     if (err)
                         reject(err);
@@ -388,7 +383,7 @@ exports.updateSingleTask = function(task, taskId, owner) {
                     else if(rows2[0].completed === 1)
                         reject(409); //the completed flag for the given user and task has already been set
                     else {
-                        const sql3 = 'UPDATE assignment SET completed = 1 WHERE task = ? AND user = ?';
+                        const sql3 = 'UPDATE assignments SET completed = 1 WHERE task = ? AND user = ?';
                         db.run(sql3, [taskId, assignee], function(err) {
                             if (err) 
                                 reject(err);
