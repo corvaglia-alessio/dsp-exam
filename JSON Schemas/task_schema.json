@@ -50,6 +50,21 @@
     },
     "assignees": {
       "type": "array",
+      "description": "the list of users that has this task assigned",
+      "items": {
+          "$ref": "./user_schema.json#"
+      }
+    },
+    "active": {
+      "type": "array",
+      "description": "the list of users that is currently working on this task",
+      "items": {
+          "$ref": "./user_schema.json#"
+      }
+    },
+    "completer": {
+      "type": "array",
+      "description": "the list of users that have already completed this task",
       "items": {
           "$ref": "./user_schema.json#"
       }

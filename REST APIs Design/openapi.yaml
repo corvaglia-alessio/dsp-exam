@@ -28,6 +28,9 @@ tags:
     description: >-
       resource representing one user to which the task with ID taskID is
       assigned
+  - name: 'tasks/{taskId}/selection'
+    description: >- 
+      resource representing the active users of the task with ID taskID
   - name: 'tasks/{taskId}/completion'
     description: resource representing the completion of the the task with ID taskID
   - name: tasks/assignments
@@ -487,6 +490,45 @@ paths:
         '500':
           description: Internal Server Error
           content: {}
+  '/api/tasks/{taskId}/selection':
+    get:
+      tags:
+        - 'tasks/{taskId}/selection'
+      security:
+        - cookieAuth: []
+      summary: Retrieve the list of users that selected the task
+      description: >-
+        Retrieve the list of users that selected the task. This operation can only be performed by the owner of the task.
+      operationId: getTaskSelectors
+      parameters:
+        - name: taskId
+          in: path
+          description: ID of the task
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content: {}
+        '403':
+          description: Forbidden
+          content: {}
+        '404':
+          description: Not Found
+          content: {}
+        '500':
+          description: Internal Server Error
+          content: {}
   '/api/tasks/{taskId}/completion':
     put:
       tags:
@@ -495,7 +537,7 @@ paths:
         - cookieAuth: []
       summary: Complete a task
       description: >-
-        The task with ID taskId is marked as completed. This operation can only be performed by an assignee of the task.
+        The task with ID taskId is marked as completed for the logged in user. The user must be an assignee for the task.
       operationId: completeTask
       parameters:
         - name: taskId
@@ -520,6 +562,44 @@ paths:
           content: {}
         '409':
           description: Conflict
+          content: {}
+        '500':
+          description: Internal Server Error
+          content: {}
+    get:
+      tags:
+        - 'tasks/{taskId}/completion'
+      security:
+        - cookieAuth: []
+      summary: Retrieve the list of users that completed the task
+      description: >-
+        Retrieve the list of users that completed the task. This operation can only be performed by the owner of the task.
+      operationId: getTaskCompleters
+      parameters:
+        - name: taskId
+          in: path
+          description: ID of the task
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content: {}
+        '403':
+          description: Forbidden
+          content: {}
+        '404':
+          description: Not Found
           content: {}
         '500':
           description: Internal Server Error
@@ -713,6 +793,20 @@ components:
           $ref: '#/components/schemas/User'
         assignees:
           type: array
+          description: >-
+            the list of users that has this task assigned
+          items:
+            $ref: '#/components/schemas/User'
+        active:
+          type: array
+          description: >-
+            the list of users that is currently working on this task
+          items:
+            $ref: '#/components/schemas/User'
+        completer:
+          type: array
+          description: >-
+            the list of users that have already completed this task
           items:
             $ref: '#/components/schemas/User'
         completers:

@@ -69,6 +69,11 @@ app.get('/api/users/:userId/tasks/created', passport.authenticate('jwt', { sessi
 app.get('/api/users/:userId/tasks/assigned', passport.authenticate('jwt', { session: false }), taskController.getAssignedTasks);
 app.put('/api/users/:userId/selection', passport.authenticate('jwt', { session: false }), assignmentController.selectTask);
 
+app.get('/api/tasks/:taskId/selection', passport.authenticate('jwt', { session: false }), assignmentController.getUsersActive);
+app.get('/api/tasks/:taskId/completion', passport.authenticate('jwt', { session: false }), assignmentController.getUsersCompleted);
+
+
+
 // Error handlers for validation and authentication errors
 
 app.use(function(err, req, res, next) {
