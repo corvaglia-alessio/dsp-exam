@@ -22,8 +22,8 @@ expressAppConfig.addValidator();
 var app = expressAppConfig.getApp();
 
 // Set validator middleware
-var taskSchema = JSON.parse(fs.readFileSync(path.join('..', 'Json Schemas', 'task_schema.json')).toString());
-var userSchema = JSON.parse(fs.readFileSync(path.join('..', 'Json Schemas', 'user_schema.json')).toString());
+var taskSchema = JSON.parse(fs.readFileSync(path.join('..', 'JSON Schemas', 'task_schema.json')).toString());
+var userSchema = JSON.parse(fs.readFileSync(path.join('..', 'JSON Schemas', 'user_schema.json')).toString());
 var validator = new Validator({ allErrors: true });
 validator.ajv.addSchema([userSchema, taskSchema]);
 var validate = validator.validate;
