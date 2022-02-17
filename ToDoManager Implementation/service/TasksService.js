@@ -441,5 +441,5 @@ const createTask = function(row) {
     const importantTask = (row.important === 1) ? true : false;
     const privateTask = (row.private === 1) ? true : false;
     const completedTask = (row.completed === 1) ? true : false;
-    return new Task(row.tid, row.description, importantTask, privateTask, row.deadline, row.project, completedTask, row.active);
+    return new Task(row.tid, row.description, importantTask, privateTask, row.deadline, row.project, completedTask, row.active, row.completers);
 }
