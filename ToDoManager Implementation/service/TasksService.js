@@ -383,7 +383,7 @@ exports.updateSingleTask = function(task, taskId, owner) {
                     else if(rows2[0].completed === 1)
                         reject(409); //the completed flag for the given user and task has already been set
                     else {
-                        const sql3 = 'UPDATE assignments SET completed = 1 WHERE task = ? AND user = ?';
+                        const sql3 = 'UPDATE assignments SET completed = 1, active = 0 WHERE task = ? AND user = ?';
                         db.run(sql3, [taskId, assignee], function(err) {
                             if (err) 
                                 reject(err);

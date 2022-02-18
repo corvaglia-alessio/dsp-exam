@@ -76,17 +76,23 @@ module.exports.selectTask = function selectTask(req, res, next) {
   if(taskId == undefined){
     utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': 'Missing taskId query parameter'}],}, 400);
   }
+  if(req.user != req.params.userId){ 
+    utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': 'Trying to select a task for a userid that is not the currently logged in user'}],}, 403); 
+  }
   Assignments.selectTask(userId, taskId)
       .then(function(response) {
             utils.writeJson(res, response, 204);
       })
       .catch(function(response) {
         if(response == 403){
-          utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': 'The user is not an assignee of the task' }], }, 403);
+          utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': 'The user is not an assignee of the task.' }], }, 403);
         }
         else if (response == 404){
           utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': 'The task does not exist.' }], }, 404);
-        } 
+        }
+        else if (response == 409){
+          utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': 'The user already completed the task.' }], }, 409);
+        }
         else {
           utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': response }],}, 500);
         }
@@ -98,6 +104,9 @@ module.exports.deselectTask = function deselectTask(req, res, next) {
   var userId = req.params.userId;
   if(taskId == undefined){
     utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': 'Missing taskId query parameter'}],}, 400);
+  }
+  if(req.user != req.params.userId){ 
+    utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': 'Trying to deselect a task for a userid that is not the currently logged in user'}],}, 403); 
   }
   Assignments.deselectTask(userId)
       .then(function(response) {

@@ -56,7 +56,7 @@ paths:
         - tasks/public
       summary: Retrieve the public tasks
       description: >-
-        The public tasks (i.e., the tasks that are visible for all the users of the service) are retrieved. This operation does not require authentication. A pagination mechanism is implemented to limit the size of messages.
+        The public tasks (i.e., the tasks that are visible for all the users of the service are retrieved. This operation does not require authentication. A pagination mechanism is implemented to limit the size of messages.
       operationId: getPublicTasks
       parameters:
         - in: query
@@ -98,7 +98,7 @@ paths:
       security:
         - cookieAuth: []
       summary: Create a new task
-      description: A new task is created by the authenticated user.
+      description: A new task is created by the authenticated user. This API does not allow to assign the task to users.
       operationId: addTask
       requestBody:
         description: Task object that needs to be created
@@ -164,9 +164,10 @@ paths:
         - cookieAuth: []
       summary: Update a task
       description: The task with ID taskId is updated. This operation does not allow to mark a task as completed. This operation can be performed only by the owner.
-        If the completers property is modified one the following happens --> 
-        1) completers number is reduced --> if the actual number of users that completed the task is now >= completers property just modified, the task is considered completed, and its flag is set to 1
-        2) completers number is augmented -> if the actual number of users that completed the task is not sufficient anymore to consider the entire task as completed, the completed flag is set to 0
+        This API does not allow to update the lists of assignees, active users or users that have completed the task.
+        If the completers property is modified, one of the following happens --> 
+        (1) completers number is decreased --> if the actual number of users that completed the task is now greater than or equal to the "completers" property, the task is considered completed, and its flag is set to 1
+        (2) completers number is increased --> if the actual number of users that completed the task is not sufficient anymore to consider the entire task as completed, the completed flag is set to 0
       operationId: updateSingleTask
       parameters:
         - name: taskId
@@ -208,7 +209,7 @@ paths:
       security:
         - cookieAuth: []
       summary: Retreve a task
-      description: The task with ID taskId is retrieved. This operation can be performed on the task if at least one of the following three conditions is satisfied. 1) The task is public. 2) The user who performs the operation is the task's owner. 3) The user who performs the operation is a task's assignee. 
+      description: The task with ID taskId is retrieved. This operation can be performed on the task if at least one of the following three conditions is satisfied. 1) The task is public. 2) The user who performs the operation is the task's owner. 3) The user who performs the operation is a task's assignee. This API does not retrieve the content of the list of assignees, active users and who completed the task.
       operationId: getSingleTask
       parameters:
         - name: taskId
@@ -464,6 +465,7 @@ paths:
         The user that is removed is the user, identified by userId, that was
         assigned to the task identified by taskId. This operation can be performed only by the owner.
         If the user already completed the task, the operation is not performed because of a conflict.
+        If the user is currently working on the task, the deletion is anyway performed.
       operationId: removeUser
       parameters:
         - name: taskId
@@ -546,7 +548,11 @@ paths:
         - cookieAuth: []
       summary: Complete a task
       description: >-
-        The task with ID taskId is marked as completed for the logged in user. The user must be an assignee for the task.
+        The task with ID taskId is marked as completed for the logged in user. 
+        The user must be an assignee for the task. 
+        If the user already completed the task, a conflict error is returned.
+        If the user was active on the task, after completing the task, the user will not be anymore an active user on the task.
+        If, after the completion, the number of completers is enough to consider the entire task completed, the completed flag will be set to 1.
       operationId: completeTask
       parameters:
         - name: taskId
@@ -621,7 +627,9 @@ paths:
         - cookieAuth: []
       summary: Retrieve the tasks created by the user with ID userId
       description: >-
-        This operation allows an authenticated user to retrieve the tasks that she has created. A pagination mechanism is implemented to limit the size of messages.
+        This operation allows an authenticated user to retrieve the tasks that she has created. 
+        This API does not retrieve the content of the list of assignees, active users and who completed the task.
+        A pagination mechanism is implemented to limit the size of messages.
       operationId: getUserTasks
       parameters:
         - name: userId
@@ -677,7 +685,9 @@ paths:
         - cookieAuth: []
       summary: Retrieve the tasks assigned to the user with ID userId
       description: >-
-        This operation allows an authenticated user to retrieve the tasks that has been assigned to her. A pagination mechanism is implemented to limit the size of messages.
+        This operation allows an authenticated user to retrieve the tasks that has been assigned to her.
+        This API does not retrieve the content of the list of assignees, active users and who completed the task.
+        A pagination mechanism is implemented to limit the size of messages.
       operationId: getAssignedTasks
       parameters:
         - name: userId
@@ -733,16 +743,25 @@ paths:
           - cookieAuth: []
         summary: Select a task as the active task
         description: >-
-          The task that is included in the request body is labeled as the acrive task for the user with ID userId.
+          The task that is included in the request body is labeled as the active task for the user with ID userId, that must be currently logged in.
+          The user must be an assignee of the task and must have not completed it yet.
+          In the body, for the task, only id and description are compulsory.
+          The selection of a task automatically remove previous selections.
         operationId: selectTask
         parameters:
           - name: userId
             in: path
-            description: ID of the user tthat wants to select the task
+            description: ID of the user that wants to select the task
             required: true
             schema:
               type: integer
               format: int64
+        requestBody:
+          description: the task to select as the active one
+          content:
+            application/json:
+              schema:
+               $ref: '#/components/schemas/Task'
         responses:
           '204':
             description: Successful operation - No Content
@@ -756,6 +775,9 @@ paths:
           '404':
             description: Not Found
             content: {}
+          '409':
+            description: Conflict
+            content: {}
           '500':
             description: Internal Server Error
             content: {}
@@ -767,7 +789,8 @@ paths:
           - cookieAuth: []
         summary: Deselect the currently active task
         description: >-
-         The currently active task for the user with id userId is deselected. If the user has no active task, a conflict error is raised.
+         The currently active task for the user with id userId is deselected. The userId must be currently logged in.
+         If the user has no active task, a conflict error is raised.
         operationId: deselectTask
         parameters:
           - name: userId
@@ -783,6 +806,9 @@ paths:
             content: {}
           '401':
             description: Unauthorized
+            content: {}
+          '403':
+            description: Forbidden
             content: {}
           '409':
             description: Conflict

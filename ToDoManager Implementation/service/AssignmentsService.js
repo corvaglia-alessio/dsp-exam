@@ -264,34 +264,42 @@ exports.selectTask = function selectTask(userId, taskId) {
                                     db.run('ROLLBACK;')
                                     reject(err);
                                 } else {
-                                    const sql4 = 'UPDATE assignments SET active = 1 WHERE user = ? AND task = ?';
-                                    db.run(sql4, [userId, taskId], function(err) {
-                                        if (err) {
+                                    const sql5 = "SELECT * FROM assignments WHERE user = ? AND task = ? AND completed = 1";
+                                    db.all(sql5, [userId, taskId], function(err, rows){
+                                        if(err){
                                             db.run('ROLLBACK;')
-                                            reject(err);
-                                        } else if (this.changes == 0) {
+                                            reject(err)
+                                        }
+                                        else if(rows.length === 1){
                                             db.run('ROLLBACK;')
-                                            reject(403);
-                                        } else {
+                                            reject(409)
+                                        }
+                                        else{
+                                            const sql4 = 'UPDATE assignments SET active = 1 WHERE user = ? AND task = ?';
+                                            db.run(sql4, [userId, taskId], function(err) {
+                                                if (err) {
+                                                    db.run('ROLLBACK;')
+                                                    reject(err);
+                                                } else if (this.changes == 0) {
+                                                    db.run('ROLLBACK;')
+                                                    reject(403);
+                                                } else {
                                                     db.run('COMMIT TRANSACTION');
                                                     //inform the clients that the user selected a different task where they are working on
                                                     var updateMessage = new WSMessage('update', parseInt(userId), rows[0].name, parseInt(taskId), rows[0].description);
                                                     WebSocket.sendAllClients(updateMessage);
                                                     WebSocket.saveMessage(userId, new WSMessage('login', parseInt(userId), rows[0].name, parseInt(taskId), rows[0].description));
-                                        
                                                     resolve();
-                                                
-                                            }
-                                        })
-                                    }
-                                })
+                                                }
+                                            })
+                                        }
+                                    })
+                                }
+                            })
                         }
-
                     })
                 }
-
             })
-        
         });
     });
 }
