@@ -102,9 +102,6 @@ module.exports.selectTask = function selectTask(req, res, next) {
 
 module.exports.deselectTask = function deselectTask(req, res, next) {
   var userId = req.params.userId;
-  if(taskId == undefined){
-    utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': 'Missing taskId query parameter'}],}, 400);
-  }
   if(req.user != req.params.userId){ 
     utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': 'Trying to deselect a task for a userid that is not the currently logged in user'}],}, 403); 
   }

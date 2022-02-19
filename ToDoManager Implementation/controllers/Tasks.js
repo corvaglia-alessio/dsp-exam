@@ -4,11 +4,13 @@ var utils = require('../utils/writer.js');
 var constants = require('../utils/constants.js');
 var Tasks = require('../service/TasksService.js');
 var Assignments = require('../service/AssignmentsService.js');
+const Task = require('../components/task');
 
 module.exports.addTask = function addTask(req, res, next) {
     var task = req.body;
     var owner = req.user;
-    Tasks.addTask(task, owner)
+    var t = new Task(undefined, task.description, task.important, task.private, task.deadline, task.project, task.completed, task.active, task.completers)
+    Tasks.addTask(t, owner)
         .then(function(response) {
             utils.writeJson(res, response, 201);
         })

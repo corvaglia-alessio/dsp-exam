@@ -71,7 +71,7 @@ app.put('/api/users/:userId/selection', passport.authenticate('jwt', { session: 
 
 app.get('/api/tasks/:taskId/selection', passport.authenticate('jwt', { session: false }), assignmentController.getUsersActive);
 app.get('/api/tasks/:taskId/completion', passport.authenticate('jwt', { session: false }), assignmentController.getUsersCompleted);
-app.get('/users/:userId/deselection', passport.authenticate('jwt', { session: false }), assignmentController.deselectTask);
+app.put('/api/users/:userId/deselection', passport.authenticate('jwt', { session: false }), assignmentController.deselectTask);
 
 
 

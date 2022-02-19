@@ -265,12 +265,12 @@ exports.selectTask = function selectTask(userId, taskId) {
                                     reject(err);
                                 } else {
                                     const sql5 = "SELECT * FROM assignments WHERE user = ? AND task = ? AND completed = 1";
-                                    db.all(sql5, [userId, taskId], function(err, rows){
+                                    db.all(sql5, [userId, taskId], function(err, rows2){
                                         if(err){
                                             db.run('ROLLBACK;')
                                             reject(err)
                                         }
-                                        else if(rows.length === 1){
+                                        else if(rows2.length === 1){
                                             db.run('ROLLBACK;')
                                             reject(409)
                                         }
@@ -315,7 +315,7 @@ exports.selectTask = function selectTask(userId, taskId) {
  **/
  exports.deselectTask = function deselectTask(userId) {
     return new Promise((resolve, reject) => {
-        const sql1 = "SELECT task FROM assignment WHERE user = ? AND active = 1"
+        const sql1 = "SELECT task FROM assignments WHERE user = ? AND active = 1"
         db.all(sql1, [userId], (err, rows) => {
             if (err)
                 reject(err);
