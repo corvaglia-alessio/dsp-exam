@@ -5,7 +5,7 @@ The structure of this repository is the following:
   - "REST APIs Design" contains the full Open API documentation of the REST APIs, including examples of JSON documents to be used when invoking the operations;
   - "ToDoManager Implementation" contains the code of the ToDoManager service application.
 
-  How to run the project:
+How to run the project:
 
   - Go into the folder "ToDoManager Implementation"
   - Run the command *npm install*
@@ -13,3 +13,11 @@ The structure of this repository is the following:
   
   - Rest APIs are exposed on http://localhost:3000/api
   - OpenAPI Swagger Documentation is exposed on http://localhost:3000/docs
+
+To test the app, use the following credentials:
+  - Username: user.dsp@polito.it
+  - Password: password
+
+
+To set the number of items in each page of the pagination mechanism, change the OFFSET variable in:
+lab03-websockets\Server\utils\constants.js
