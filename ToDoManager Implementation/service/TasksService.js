@@ -426,7 +426,7 @@ exports.updateSingleTask = function(task, taskId, owner) {
  **/
  exports.getCompletedTasksTotal = function(req) {
     return new Promise((resolve, reject) => {
-        var sqlNumOfTasks = "SELECT count(*) total FROM tasks as t, users as u, assignments as a WHERE t.id = a.task AND a.user = u.id AND u.id = ? AND completed = 1";
+        var sqlNumOfTasks = "SELECT count(*) total FROM tasks as t, users as u, assignments as a WHERE t.id = a.task AND a.user = u.id AND u.id = ? AND a.completed = 1";
         db.get(sqlNumOfTasks, req.user, (err, size) => {
             if (err) {
                 reject(err);
@@ -448,7 +448,7 @@ exports.updateSingleTask = function(task, taskId, owner) {
  **/
  exports.getCompletedTasks = function(req) {
     return new Promise((resolve, reject) => {
-        var sql =  "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline, t.completed, t.completers, a.active, u.id as uid, u.name, u.email FROM tasks as t, users as u, assignments as a WHERE t.id = a.task AND a.user = u.id AND u.id = ? AND completed = 1";
+        var sql =  "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline, t.completed, t.completers, u.id as uid, u.name, u.email FROM tasks as t, users as u, assignments as a WHERE t.id = a.task AND a.user = u.id AND u.id = ? AND a.completed = 1";
         var limits = getPagination(req);
         if (limits.length != 0) sql = sql + " LIMIT ?,?";
         limits.unshift(req.user);
@@ -475,14 +475,14 @@ exports.updateSingleTask = function(task, taskId, owner) {
  **/
  exports.getActiveTask = function(owner) {
     return new Promise((resolve, reject) => {
-        const sql1 = "SELECT id FROM assignments WHERE user = ? AND active = 1";
+        const sql1 = "SELECT task FROM assignments WHERE user = ? AND active = 1";
         db.all(sql1, [owner], (err, rows) => {
             if (err)
                 reject(err);
             else if (rows.length === 0)
                 resolve(null);
             else{
-                var taskId = rows[0].id;
+                var taskId = rows[0].task;
                 const sql2 = "SELECT id as tid, description, important, private, project, deadline, completed, owner, completers FROM tasks WHERE id = ?";
                 db.all(sql2, [taskId], (err, rows2) => {
                     if(err){
