@@ -284,7 +284,10 @@ module.exports.getActiveTask = function getActiveTask(req, res, next) {
 
     Tasks.getActiveTask(req.user)
         .then(function(response) {
-            utils.writeJson(res, response);
+            if(!response)
+                utils.writeJson(res, {});
+            else
+                utils.writeJson(res, response);
         })
         .catch(function(response) {
             utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': response }], }, 500);
