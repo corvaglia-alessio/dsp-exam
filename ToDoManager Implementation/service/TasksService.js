@@ -415,6 +415,88 @@ exports.updateSingleTask = function(task, taskId, owner) {
     });
 }
 
+/**
+ * Retrieve the number of completed tasks
+ * 
+ * Input: 
+ * - req: the request of the user
+ * Output:
+ * - total number of completed tasks
+ * 
+ **/
+ exports.getCompletedTasksTotal = function(req) {
+    return new Promise((resolve, reject) => {
+        var sqlNumOfTasks = "SELECT count(*) total FROM tasks as t, users as u, assignments as a WHERE t.id = a.task AND a.user = u.id AND u.id = ? AND completed = 1";
+        db.get(sqlNumOfTasks, req.user, (err, size) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(size.total);
+            }
+        });
+    });
+}
+
+/**
+ * Retreve the tasks completed by the user
+ * 
+ * Input: 
+ * - req: the request of the user
+ * Output:
+ * - the list of tasks completed by the user
+ * 
+ **/
+ exports.getCompletedTasks = function(req) {
+    return new Promise((resolve, reject) => {
+        var sql =  "SELECT t.id as tid, t.description, t.important, t.private, t.project, t.deadline, t.completed, t.completers, a.active, u.id as uid, u.name, u.email FROM tasks as t, users as u, assignments as a WHERE t.id = a.task AND a.user = u.id AND u.id = ? AND completed = 1";
+        var limits = getPagination(req);
+        if (limits.length != 0) sql = sql + " LIMIT ?,?";
+        limits.unshift(req.user);
+
+        db.all(sql, limits, (err, rows) => {
+            if (err) {
+                reject(err);
+            } else {
+                let tasks = rows.map((row) => createTask(row));
+                resolve(tasks);
+            }
+        });
+    });
+}
+
+/**
+ * Retrieve the task currently active for the user
+ *
+ * Input: 
+ * - owner: ID of the user who wants to retrieve its active task
+ * Output:
+ * - the requested task
+ * 
+ **/
+ exports.getActiveTask = function(owner) {
+    return new Promise((resolve, reject) => {
+        const sql1 = "SELECT id FROM assignments WHERE user = ? AND active = 1";
+        db.all(sql1, [owner], (err, rows) => {
+            if (err)
+                reject(err);
+            else if (rows.length === 0)
+                resolve(null);
+            else{
+                var taskId = rows[0].id;
+                const sql2 = "SELECT id as tid, description, important, private, project, deadline, completed, owner, completers FROM tasks WHERE id = ?";
+                db.all(sql2, [taskId], (err, rows2) => {
+                    if(err){
+                        reject(err);
+                    }
+                    else{
+                        var task = createTask(rows2[0]);
+                        resolve(task);
+                    }
+                });
+            }
+        });
+    });
+}
 
 
 /**

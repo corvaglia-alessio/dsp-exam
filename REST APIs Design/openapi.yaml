@@ -49,6 +49,10 @@ tags:
     description: resource representing the tasks created by the user with ID userId
   - name: 'users/{userId}/tasks/assigned'
     description: resource representing the tasks assigned to the user with ID userId
+  - name: 'users/{userId}/tasks/active'
+    description: resource representing the currently active task for user with ID userId
+  - name: 'users/{userId}/tasks/completed'
+    description: resource representing the tasks completed by the user with ID userId
 paths:
   /api/tasks/public:
     get:
@@ -382,6 +386,7 @@ paths:
       description: >-
         The task with ID taskId is assigned to the user specified in the request
         body. This operation can only be performed by the owner. For the user in the body email ad userId must be specified.
+        Even if the task is completed, the owner can assign it to other users.
       operationId: assignTaskToUser
       parameters:
         - name: taskId
@@ -553,6 +558,7 @@ paths:
         If the user already completed the task, a conflict error is returned.
         If the user was active on the task, after completing the task, the user will not be anymore an active user on the task.
         If, after the completion, the number of completers is enough to consider the entire task completed, the completed flag will be set to 1.
+        Additional users can mark their own assignment for the task as completed, even if the task is already completed.
       operationId: completeTask
       parameters:
         - name: taskId
@@ -735,6 +741,100 @@ paths:
         '500':
           description: Internal Server Error
           content: {}
+  '/api/users/{userId}/tasks/active':
+    get:
+      tags:
+        - users/{userId}/tasks/active
+      security:
+        - cookieAuth: []
+      summary: Retrieve the currently active task for the user
+      description: >-
+        This operation allows an authenticated user to retrieve his/her currently active task.
+        This API does not retrieve the content of the list of assignees, active users and who completed the task.
+        If the user has no task currently active, the return value is an empty object.
+      operationId: getActiveTasks
+      parameters:
+        - name: userId
+          in: path
+          description: ID of the user
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          description: Unauthorized
+          content: {}
+        '403':
+          description: Forbidden
+          content: {}
+        '500':
+          description: Internal Server Error
+          content: {}
+  '/api/users/{userId}/tasks/completed':
+    get:
+      tags:
+        - users/{userId}/tasks/completed
+      security:
+        - cookieAuth: []
+      summary: Retrieve the tasks completed by the user with ID userId
+      description: >-
+        This operation allows an authenticated user to retrieve the tasks that he/she completed.
+        This API does not retrieve the content of the list of assignees, active users and who completed the task.
+        A pagination mechanism is implemented to limit the size of messages.
+      operationId: getCompletedTasks
+      parameters:
+        - name: userId
+          in: path
+          description: ID of the user
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: pageNo
+          required: false
+          schema:
+            type: integer
+          description: The id of the requested page (if absent, the first page is returned)
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalPages:
+                    type: integer
+                  currentPage:
+                    type: integer
+                  totalItems:
+                    type: integer
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  next:
+                    type: string
+        '401':
+          description: Unauthorized
+          content: {}
+        '403':
+          description: Forbidden
+          content: {}
+        '404':
+          description: Not Found
+          content: {}
+        '500':
+          description: Internal Server Error
+          content: {}
   '/api/users/{userId}/selection':
       put:
         tags:
@@ -789,7 +889,7 @@ paths:
           - cookieAuth: []
         summary: Deselect the currently active task
         description: >-
-         The currently active task for the user with id userId is deselected. The userId must be currently logged in.
+         It is an update operation: the currently active task for the user with id userId is deselected. The userId must be currently logged in.
          If the user has no active task, a conflict error is raised.
         operationId: deselectTask
         parameters:

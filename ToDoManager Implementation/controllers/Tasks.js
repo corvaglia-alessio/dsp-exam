@@ -229,3 +229,64 @@ module.exports.completeTask = function completeTask(req, res, next) {
             }
         });
 };
+
+module.exports.getCompletedTasks = function getCompletedTasks(req, res, next) {
+    
+    if(req.user != req.params.userId){
+        utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': 'The user is not characterized by the specified userId.' }], }, 403);
+        return;
+    }
+
+    var numOfTasks = 0;
+    var next=0;
+
+    Tasks.getCompletedTasksTotal(req)
+        .then(function(response) {
+            numOfTasks = response;
+        });
+
+    Tasks.getCompletedTasks(req)
+        .then(function(response) {
+            if (req.query.pageNo == null) var pageNo = 1;
+            else var pageNo = req.query.pageNo;
+            var totalPage=Math.ceil(numOfTasks / constants.OFFSET);
+            
+            next = Number(pageNo) + 1;
+
+            if (pageNo>totalPage) {
+                utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': "The page does not exist." }], }, 404);
+            }   else if (pageNo == totalPage) {
+                utils.writeJson(res, {
+                    totalPages: totalPage,
+                    currentPage: pageNo,
+                    totalItems: numOfTasks,
+                    tasks: response
+                });
+            } else {
+                var nextLink = "/api/users/" + req.params.userId + "/tasks/assigned?pageNo=" + next;
+                utils.writeJson(res, {
+                    totalPages: totalPage,
+                    currentPage: pageNo,
+                    totalItems: numOfTasks,
+                    tasks: response,
+                    next: nextLink
+                });
+            }
+        })
+};
+
+module.exports.getActiveTask = function getActiveTask(req, res, next) {
+
+    if(req.user != req.params.userId){
+        utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': 'The user is not characterized by the specified userId.' }], }, 403);
+        return;
+    }
+
+    Tasks.getActiveTask(req.user)
+        .then(function(response) {
+            utils.writeJson(res, response);
+        })
+        .catch(function(response) {
+            utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': response }], }, 500);
+        });
+};
