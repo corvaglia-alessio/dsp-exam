@@ -20,4 +20,4 @@ To test the app, use the following credentials:
 
 
 To set the number of items in each page of the pagination mechanism, change the OFFSET variable in:
-lab03-websockets\Server\utils\constants.js
+ToDoManager Implementation\utils\constants.js
