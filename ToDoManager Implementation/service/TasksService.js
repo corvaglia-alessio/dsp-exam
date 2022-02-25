@@ -21,7 +21,7 @@ exports.addTask = function(task, owner) {
             if (err) {
                 reject(err);
             } else {
-                var createdTask = new Task(this.lastID, task.description, task.important, task.private, task.deadline, task.project, task.completed, task.active, task.completers);
+                var createdTask = new Task(this.lastID, task.description, task.important, task.private, task.deadline, task.project, task.completed, undefined, task.completers);
                 resolve(createdTask);
             }
         });
