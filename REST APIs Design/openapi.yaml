@@ -49,7 +49,7 @@ tags:
     description: resource representing the tasks created by the user with ID userId
   - name: 'users/{userId}/tasks/assigned'
     description: resource representing the tasks assigned to the user with ID userId
-  - name: 'users/{userId}/tasks/active'
+  - name: 'users/{userId}/tasks/selection'
     description: resource representing the currently active task for user with ID userId
   - name: 'users/{userId}/tasks/completed'
     description: resource representing the tasks completed by the user with ID userId
@@ -741,10 +741,10 @@ paths:
         '500':
           description: Internal Server Error
           content: {}
-  '/api/users/{userId}/tasks/active':
+  '/api/users/{userId}/tasks/selection':
     get:
       tags:
-        - users/{userId}/tasks/active
+        - users/{userId}/tasks/selection
       security:
         - cookieAuth: []
       summary: Retrieve the currently active task for the user
@@ -752,7 +752,7 @@ paths:
         This operation allows an authenticated user to retrieve his/her currently active task.
         This API does not retrieve the content of the list of assignees, active users and who completed the task.
         If the user has no task currently active, the return value is an empty object.
-      operationId: getActiveTasks
+      operationId: getSelectedTasks
       parameters:
         - name: userId
           in: path
@@ -845,7 +845,7 @@ paths:
         description: >-
           The task that is included in the request body is labeled as the active task for the user with ID userId, that must be currently logged in.
           The user must be an assignee of the task and must have not completed it yet.
-          In the body, for the task, only id and description are compulsory.
+          In the body, for the task, only id is compulsory.
           The selection of a task automatically remove previous selections.
         operationId: selectTask
         parameters:
